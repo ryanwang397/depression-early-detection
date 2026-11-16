@@ -1,0 +1,13 @@
+# python 3.10.20 (conda env vllm_env); CUDA 12.8 wheels
+torch==2.7.0
+transformers==4.52.4
+peft==0.15.2
+accelerate==1.7.0
+vllm==0.9.1
+safetensors==0.5.3
+scikit-learn==1.7.0
+pandas==2.3.0
+pyarrow==20.0.0
+numpy==2.2.6
+scipy==1.15.3
+pyyaml==6.0.2

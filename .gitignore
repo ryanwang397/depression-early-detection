@@ -1,0 +1,12 @@
+# generated data, model outputs and logs: never commit (patient-level data)
+outputs/
+results/
+logs/
+*.parquet
+*.jsonl
+*.jsonl.gz
+*.csv
+*.pt
+*.safetensors
+__pycache__/
+*.pyc

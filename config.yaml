@@ -1,0 +1,90 @@
+# EDIT the four source paths below if the source extract lives elsewhere; everything derived is written under out_dir.
+# Depression early-detection dataset construction — configuration
+# Source data is never modified.  Set the four source paths below to your local copy of the extract.
+paths:
+  notes_dir: /path/to/clinical_notes                      # directory with the note CSV files
+  notes_glob: "*_CLINICAL_NOTE_*.csv"                     # note CSV files, numbered *_<k>.csv
+  note_metadata: /path/to/note_metadata/CLINICAL_NOTE.csv
+  omop_dir: /path/to/omop_cdm_csv
+  concept_dir: /path/to/omop_concept_tables
+  out_dir: outputs            # relative paths are resolved against the repository root (pipeline/common.py)
+
+seed: 20260904
+
+# ---------------------------------------------------------------- phenotype
+phenotype:
+  # Outcome label: first occurrence of any of these ICD prefixes (dot kept) in condition_source_value
+  target_icd_prefixes: ["F32", "F33", "F34.1", "296.2", "296.3", "311", "300.4"]
+  # Broad depression-spectrum codes: never used as label; used for washout (before cutoff) and to
+  # disqualify negatives (anywhere in observation period) / mark ambiguous outcomes.
+  broad_icd_prefixes: ["F43.21", "F43.23", "F34.81", "F34.8", "F34.9", "F06.31", "F06.32", "F53.0", "309.0", "309.28"]
+  # Antidepressant ingredients used for washout (RxNorm ingredient names; expanded to all descendant drug concepts)
+  washout_antidepressants: [sertraline, fluoxetine, escitalopram, citalopram, paroxetine, fluvoxamine,
+                            venlafaxine, desvenlafaxine, duloxetine, bupropion, mirtazapine, vilazodone,
+                            vortioxetine, levomilnacipran, nefazodone, clomipramine, esketamine]
+  # Weak-evidence antidepressants: features only (common non-psychiatric use in pediatrics)
+  weak_antidepressants: [trazodone, amitriptyline, nortriptyline, imipramine, doxepin]
+  glp1_ingredients: [semaglutide, liraglutide, tirzepatide, dulaglutide, exenatide]
+
+# ---------------------------------------------------------------- cohort design
+cohort:
+  leads_months: [12, 9, 6, 3]
+  days_per_month: 30.4375
+  min_age_at_anchor_years: 12
+  recency_max_days: 180          # cutoff visit must be within this many days before anchor - lead
+  recency_sensitivity_days: 90   # flag only
+  min_history_days: 90           # observation_period_start <= cutoff - min_history_days
+  negative_followup_days: 365    # anchor + 365 <= observation_period_end (negatives)
+  anchor_visit_exclude_source_values: ["telephone", "unknown", ""]   # in-person / telemedicine only
+  negatives_per_positive: null   # null = keep all eligible negatives (natural), else ratio
+  split_fractions: {train: 0.70, dev: 0.15, test: 0.15}
+
+# ---------------------------------------------------------------- notes
+notes:
+  # InpatientNoteType (normalized lower-case) whitelist
+  whitelist_types: ["progress notes", "progress note", "ed provider notes", "h&p", "h&p (view-only)",
+                    "consults", "consult note", "discharge summary", "psych progress note", "psych nurses notes",
+                    "telephone encounter", "interval h&p note", "patient care transfer note", "assessment & plan note"]
+  max_note_chars_raw: 60000
+  # L3 evidence thresholds
+  phq9_positive_threshold: 10
+  phq2_positive_threshold: 3
+
+# ---------------------------------------------------------------- structured feature whitelists
+measurements:
+  # vitals / anthropometrics by source value (regex, case-insensitive)
+  keep_source_regex: "^(BMI|WEIGHT|HEIGHT|BP - Non-invasive (SBP|DBP)|SBP - Unknown Method|DBP - Unknown Method)( Admit)?$"
+  # labs by LOINC code in measurement_source_value
+  keep_loinc:
+    "4548-4": hba1c
+    "17856-6": hba1c
+    "2345-7": glucose
+    "2339-0": glucose
+    "3016-3": tsh
+    "11580-8": tsh
+    "3024-7": free_t4
+    "1989-3": vitamin_d
+    "62292-8": vitamin_d
+    "718-7": hemoglobin
+    "2276-4": ferritin
+    "2093-3": cholesterol_total
+    "13457-7": ldl
+    "2089-1": ldl
+    "2085-9": hdl
+    "2571-8": triglycerides
+    "1742-6": alt
+    "1920-8": ast
+    "2160-0": creatinine
+    "2951-2": sodium
+    "2823-3": potassium
+    "6690-2": wbc
+    "777-3": platelets
+    "20448-7": insulin
+observations:
+  keep_source_values: ["Payer", "SMOKING STATUS", "Marital Status", "Zipcode"]
+  keep_icd_regex: "^(Z|R|V)\\d"
+
+slurm:
+  account: your_account
+  qos: your_qos
+  partition: your_cpu_partition
