@@ -91,6 +91,41 @@ The scripts are written for the 3-month lead. The 6-, 9- and 12-month leads use 
 | 6 | `s6_assemble.py` | one JSON record per patient: metadata, dated structured events, cleaned notes, XML-formatted record; nothing after the cutoff |
 | 6b | `s6b_merge_dataset.py --lead 3` | merges the two record sets per split → `outputs/dataset/lead_3mo/` |
 
+## Reproducibility
+
+The study data cannot be shared, but nothing in the code is tied to them. The full pipeline can be reproduced on any
+comparable de-identified EHR extract that has structured data in the OMOP common data model and clinical notes linked to
+OMOP visits. All models are public HuggingFace checkpoints.
+
+Required inputs:
+
+* **OMOP CDM tables** as CSV files in `omop_dir`: `person`, `observation_period`, `death`, `provider`, `care_site`,
+  `visit_occurrence`, `condition_occurrence`, `drug_exposure`, `procedure_occurrence`, `observation` and `measurement`.
+  The columns used are listed in `TABLES` in `pipeline/s1_build_index.py`. Diagnoses must carry ICD-9/ICD-10 codes in
+  `condition_source_value`.
+* **OMOP vocabulary** in `concept_dir`: `Concept.csv` and `ConceptAncestor.csv`. Antidepressants are found through their
+  RxNorm ingredients.
+* **Clinical notes**:
+  * the note text, as CSV files matching `notes_glob`, with one record `"note_id","text"` per note;
+  * a note-metadata CSV with one row per note version: note id, version number, patient id, encounter date, note type,
+    linked visit id, and author type and specialty. The column names are listed in `t_note_meta` in
+    `pipeline/s1_build_index.py`; rename your columns to match, or edit that function.
+
+To run on another dataset:
+
+1. Set the source paths and `notes_glob` in `config.yaml`. Set the environment and Slurm settings in `scripts/env.sh`.
+2. Adapt the site-specific vocabularies in `config.yaml`:
+   * the note-type whitelist (`notes.whitelist_types`);
+   * the visit types that cannot serve as anchors (`cohort.anchor_visit_exclude_source_values`);
+   * the measurement and observation source values;
+   * if needed, the outcome and washout code lists (`phenotype`).
+3. Stage 2 estimates and removes a per-patient offset between note dates and OMOP dates. In a dataset where both sources
+   share the same dates, it estimates an offset of zero and leaves the dates unchanged.
+4. Run the scripts in the order given under "Running", then `scripts/40_make_table.sh`.
+
+The cohort definition (lead times, age, look-back and follow-up rules, explicit-evidence criteria) is set entirely in
+`config.yaml`, so the same study design can be applied to other health systems.
+
 ## License
 
 MIT (see `LICENSE`).
