@@ -91,15 +91,6 @@ The scripts are written for the 3-month lead. The 6-, 9- and 12-month leads use 
 | 6 | `s6_assemble.py` | one JSON record per patient: metadata, dated structured events, cleaned notes, XML-formatted record; nothing after the cutoff |
 | 6b | `s6b_merge_dataset.py --lead 3` | merges the two record sets per split → `outputs/dataset/lead_3mo/` |
 
-## Reproducibility notes
-
-* bf16 training and batched inference are not bit-reproducible. Repeated greedy evaluations of the same adapter differ
-  by about 0.4 AUROC percentage points.
-* The first LoRA stage at learning rate 1e-4 occasionally collapses (loss stuck near 0.69, development AUROC ≈ 0.5). If
-  that happens, re-run with another `--seed`.
-* The reported experiments used an earlier revision of the note-cleaning rules in `pipeline/note_text.py`. The shipped
-  revision changes the condensed text of about 3% of notes by a few characters (fragments of review-of-systems templates).
-
 ## License
 
 MIT (see `LICENSE`).
